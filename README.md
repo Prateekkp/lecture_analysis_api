@@ -1,6 +1,6 @@
 # Lecture Analysis API
 
-**Production-Grade API for Automated Pedagogical Analysis**
+**API for Automated Pedagogical Analysis**
 
 A FastAPI-based service that transcribes audio lectures and performs deep pedagogical analysis with context-aware scoring. Built with five core reliability guarantees for enterprise environments.
 
