@@ -1,0 +1,13 @@
+fastapi
+uvicorn[standard]
+
+openai
+
+requests
+
+python-dotenv
+
+python-multipart
+
+# For structured response models
+pydantic
