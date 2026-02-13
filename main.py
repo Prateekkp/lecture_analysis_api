@@ -3,8 +3,8 @@ from api.routes import router
 from middleware.observability import metrics_tracker
 
 app = FastAPI(
-    title="Audio to English Document API",
-    description="Lecture analysis API with five core guarantees: Safe Inputs, Predictable Outputs, Failure Containment, Privacy by Design, and Operational Discipline",
+    title="Multilingual Audio to Document API",
+    description="Lecture analysis API supporting English, Hindi, and Hinglish with five core guarantees: Safe Inputs, Predictable Outputs, Failure Containment, Privacy by Design, and Operational Discipline",
     version="1.0.0"
 )
 
@@ -42,6 +42,7 @@ async def root():
         ],
         "endpoints": {
             "/health": "Health check with metrics",
-            "/audio-to-document": "POST audio file for pedagogical analysis"
+            "/audio-to-document": "POST audio file for pedagogical analysis",
+            "/audio-url-to-document": "POST audio file URL for pedagogical analysis"
         }
     }
