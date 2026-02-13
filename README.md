@@ -1,8 +1,8 @@
-# Lecture Analysis API
+# Multilingual Audio to Document API
 
 **API for Automated Pedagogical Analysis**
 
-A FastAPI-based service that transcribes audio lectures and performs deep pedagogical analysis with context-aware scoring. Built with five core reliability guarantees for enterprise environments.
+A FastAPI-based service that transcribes audio lectures (supporting English, Hindi, and Hinglish) and performs deep pedagogical analysis with context-aware scoring. Built with five core reliability guarantees for enterprise environments.
 
 ---
 
@@ -18,6 +18,7 @@ The system provides **human-readable analysis** and **accuracy-based scoring** (
 
 **Key Features:**
 - Automated audio transcription (OpenAI Whisper)
+- Supports multilingual audio: English, Hindi, Hinglish
 - Intelligent pedagogical analysis (NVIDIA API)
 - Context-aware scoring with syllabus alignment
 - Enterprise-grade reliability with five guarantees
@@ -34,7 +35,7 @@ The system provides **human-readable analysis** and **accuracy-based scoring** (
 
 ### 1. Safe Inputs
 - File type validation (audio formats only)
-- File size limits (max 25MB)
+- File size limits (max 100MB)
 - Content validation (non-empty files)
 - API key validation on startup
 
@@ -47,7 +48,7 @@ The system provides **human-readable analysis** and **accuracy-based scoring** (
 ### 3. Failure Containment
 - Retry logic with exponential backoff (3 attempts)
 - Circuit breaker pattern for external APIs
-- Timeout protection (30s per API call)
+- Timeout protection (30s per API call for `audio-to-document`, 60s for `audio-url-to-document`)
 - Graceful error handling
 
 ### 4. Privacy by Design
@@ -71,7 +72,7 @@ Upload audio file for pedagogical analysis.
 - Content-Type: `multipart/form-data`
 - Field: `audio` (MP3, WAV, M4A, MP4) - **Required**
 - Field: `syllabus` (text) - **Optional** - Curriculum/syllabus context for alignment scoring
-- Max size: 25MB
+- Max size: 100MB
 
 **Response:**
 ```json
@@ -87,6 +88,24 @@ Upload audio file for pedagogical analysis.
   }
 }
 ```
+
+### `POST /audio-url-to-document`
+Process audio from a publicly accessible URL for pedagogical analysis. Supports Google Drive direct download links.
+
+**Request:**
+- Content-Type: `application/json`
+- Body:
+```json
+{
+  "audio_url": "https://example.com/audio.mp3",
+  "syllabus": "Topics: Introduction to Machine Learning, Supervised Learning, Neural Networks, Deep Learning Fundamentals, Model Evaluation"
+}
+```
+- `audio_url` (string, `HttpUrl`) - **Required** - URL of the audio file (e.g., AWS S3, Google Drive direct link). Max file size for download: 100MB.
+- `syllabus` (text) - **Optional** - Curriculum/syllabus context for alignment scoring
+
+**Response:**
+(Same as `/audio-to-document` endpoint response)
 
 ### `GET /health`
 Health check and metrics.
@@ -129,14 +148,22 @@ uvicorn main:app --reload
 
 4. **Test with curl:**
 ```bash
-# Basic request
+# Basic request with file upload
 curl -X POST "http://localhost:8000/audio-to-document" \
   -F "audio=@lecture.mp3"
 
-# With syllabus for context-aware scoring
+# With syllabus for context-aware scoring via file upload
 curl -X POST "http://localhost:8000/audio-to-document" \
   -F "audio=@lecture.mp3" \
   -F "syllabus=Topics: Introduction to Machine Learning, Supervised Learning, Neural Networks, Deep Learning Fundamentals, Model Evaluation"
+
+# Basic request with audio URL
+curl -X POST "http://localhost:8000/audio-url-to-document" \
+  -H "Content-Type: application/json" \
+  -d '{
+        "audio_url": "https://drive.google.com/file/d/YOUR_GOOGLE_DRIVE_FILE_ID/view?usp=sharing",
+        "syllabus": "Topics: Introduction to Machine Learning, Supervised Learning, Neural Networks, Deep Learning Fundamentals, Model Evaluation"
+      }'
 ```
 
 ## Architecture
@@ -156,6 +183,7 @@ lecture_analysis_api/
 │   ├── privacy.py         # Secure deletion, data retention
 │   └── observability.py   # Logging and metrics
 └── models/
+    ├── requests.py        # Request schemas (for URL-based input)
     └── responses.py       # Response schemas (Predictable Outputs)
 ```
 
@@ -166,7 +194,7 @@ The analysis provides a **human-readable, conversational observation report** co
 1. **Question Frequency & Quality**: How often questions are asked and their distribution
 2. **Wait Time & Pacing**: Pause duration after questions and overall session pacing
 3. **Student Engagement**: Balance between instructor and student participation
-4. **Cultural Contextualization**: Hindi/English code-switching for cultural adaptation
+4. **Cultural Contextualization**: Hindi/English/Hinglish code-switching for cultural adaptation
 
 The analysis is written in natural, flowing paragraphs that educators can easily understand and act upon - not robotic bullet points.
 
@@ -194,7 +222,7 @@ The score includes detailed, actionable reasoning (2-3 sentences) explaining the
 - **No data persistence**: Audio deleted after processing
 - **Secure deletion**: 3-pass overwrite (DoD standard)
 - **API key protection**: Validated on startup, masked in logs
-- **Timeout protection**: All external calls have 30s timeout
+- **Timeout protection**: All external calls have 30s timeout (60s for URL downloads)
 - **Circuit breakers**: Prevent cascading failures
 
 ## Monitoring
@@ -212,7 +240,7 @@ Access metrics via `/health` endpoint.
 
 HTTP codes:
 - `200`: Success
-- `400`: Bad request (invalid file)
+- `400`: Bad request (invalid file, download error, URL error)
 - `413`: File too large
 - `502`: External API failure
 - `500`: Internal server error
